@@ -1,4 +1,7 @@
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -11,15 +14,51 @@ public class Main {
 
         System.out.println(marketplace.loginUser("1","password"));
 
-        Product product1 = new Product("p1", "Product 1", 10.0, 50);
+        Product product1 = new Product("p1", "Product 1", 10.0, 4);
         marketplace.getProducts().put(product1.getProductId(), product1);
 
-        marketplace.addToCart("1", "p1", 3);
-        List<CartItem> cart = marketplace.getCart("1");
-        System.out.println("User Cart" + cart);
+     ExecutorService executorService = Executors.newFixedThreadPool(2);
 
-        marketplace.checkout("1", "WhiteHouse", "Gpay", "25/11/2023");
-        List<Order> orderHistory = marketplace.getOrderHistory("1");
-        System.out.println("Previous Orders" + orderHistory);
+        executorService.submit(() -> {
+            // User 1 adds to cart and checks out
+            try {
+                marketplace.addToCart("1", "p1", 4);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            System.out.println("User 1 added to cart");
+
+            marketplace.checkout("1","whitehouse","gpay","25/12/2023");
+            System.out.println("User 1 checked out");
+        });
+
+        executorService.submit(() -> {
+            // User 2 adds to cart and checks out
+            try {
+                marketplace.addToCart("2", "p1", 4);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            System.out.println("User 2 added to cart");
+
+            marketplace.checkout("2","empirestate","gpay","25/12/2023");
+            System.out.println("User 2 checked out");
+        });
+
+        // Shutdown the executor service after tasks are submitted
+        executorService.shutdown();
+
+        // Wait for the threads to finish
+        try {
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // Display the final order history for both users
+        System.out.println("User 1 order history: " + marketplace.getOrderHistory("1"));
+        System.out.println("User 2 order history: " + marketplace.getOrderHistory("2"));
     }
 }
